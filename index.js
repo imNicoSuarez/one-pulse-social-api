@@ -48,6 +48,14 @@ const authenticateUser = (req, res, next) => {
 // 4. Multer para manejo de archivos (los guarda temporalmente en /uploads)
 const upload = multer({ dest: 'uploads/' });
 
+// 5. Servir el Frontend (index.html)
+// Esta ruta sirve el archivo index.html cuando el usuario navega a la URL raíz del servidor (https://<urlserver>/)
+// Asumimos que 'index.html' está en la misma ubicación que 'index.js'.
+app.get('/', (req, res) => {
+    // Usamos path.join y __dirname para asegurar que funciona en el entorno de Render.
+    res.sendFile(path.join(__dirname, 'index.html')); 
+});
+
 
 // ----------------------------------------------------------------------------------
 // 1. ENDPOINTS: GESTIÓN DE TOKENS (TOKEN STORE GATEWAY)
