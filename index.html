@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway de Publicación Multiplataforma</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .scroll-container {
+            max-height: 20rem;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <!-- Contenedor Principal (Login o Dashboard) -->
+    <div id="app-container" class="w-full max-w-4xl bg-white shadow-xl rounded-xl p-6 md:p-10 mt-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-indigo-700">OnePulse Publisher</h1>
+            <p class="text-gray-500 mt-1">Gateway API: Render & n8n</p>
+        </header>
+
+        <!-- PANTALLA DE LOGIN -->
+        <div id="login-view" class="space-y-6">
+            <h2 class="text-2xl font-bold text-center text-gray-800">Acceso al Panel</h2>
+            <div class="max-w-md mx-auto bg-gray-50 p-6 rounded-lg shadow-inner">
+                <p class="text-sm text-center text-gray-600 mb-4">Credenciales: ImNicoSuarez / onePulsePodcast</p>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Usuario</label>
+                        <input type="text" id="username" value="ImNicoSuarez" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <input type="password" id="password" value="onePulsePodcast" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+                        Iniciar Sesión
+                    </button>
+                    <p id="login-message" class="text-center text-red-500 text-sm hidden"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE DASHBOARD (Panel de Publicación) -->
+        <div id="dashboard-view" class="hidden">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Publicador de Contenido</h2>
+                <button onclick="logoutUser()" class="py-1 px-3 text-sm rounded-md bg-red-500 text-white hover:bg-red-600 transition">
+                    Salir
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Columna 1: Conexión de Cuentas -->
+                <div class="lg:col-span-1 space-y-4">
+                    <h3 class="text-lg font-semibold border-b pb-2 text-gray-700">Estado de Conexiones</h3>
+                    <div id="connection-status" class="space-y-3">
+                        <!-- Las plataformas se renderizarán aquí -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4 p-2 bg-yellow-100 rounded-md">
+                        *El botón "Conectar" simula el flujo OAuth y el POST a `/api/v1/token_store`.
+                    </p>
+                </div>
+
+                <!-- Columna 2 & 3: Formulario de Publicación -->
+                <div class="lg:col-span-2">
+                    <h3 class="text-lg font-semibold border-b pb-2 text-gray-700">Crear Publicación</h3>
+                    <form id="publish-form" class="space-y-4 mt-4">
+                        
+                        <!-- Archivo Multimedia -->
+                        <div>
+                            <label for="media-file" class="block text-sm font-medium text-gray-700">Imagen / Video (Máx 2MB)</label>
+                            <input type="file" id="media-file" name="media_file" accept="image/*,video/*" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        </div>
+
+                        <!-- Caption / Descripción -->
+                        <div>
+                            <label for="caption" class="block text-sm font-medium text-gray-700">Caption / Descripción</label>
+                            <textarea id="caption" name="caption" rows="4" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        </div>
+
+                        <!-- Selección de Plataformas -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Publicar en Plataformas Válidas</label>
+                            <div id="platform-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <!-- Checkboxes se renderizarán aquí -->
+                            </div>
+                        </div>
+
+                        <!-- Botón y Mensajes -->
+                        <button type="submit" id="publish-button" class="w-full py-3 px-4 border border-transparent rounded-md shadow-lg text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150" disabled>
+                            Publicar Contenido
+                        </button>
+                        <p id="publish-message" class="text-center text-sm font-semibold"></p>
+                    </form>
+
+                    <!-- Resultados de Publicación -->
+                    <div id="publish-results" class="mt-6 space-y-3 p-4 bg-gray-50 rounded-lg hidden scroll-container">
+                        <h4 class="font-semibold text-gray-700">Resultados Detallados</h4>
+                        <!-- Resultados se insertarán aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONSTANTES GLOBALES (DEBEN COINCIDIR CON EL BACKEND) ---
+        const USERNAME = 'ImNicoSuarez';
+        const PASSWORD = 'onePulsePodcast';
+        const MOCK_JWT = 'MOCKED_JWT_12345';
+        const USER_ID = 'ImNicoSuarez_ID'; // Usado por el backend para buscar tokens
+        const API_BASE_URL = '/api/v1'; // Base de la API en el mismo servidor
+
+        const PLATFORMS = [
+            { id: 'instagram', name: 'Instagram', icon: '📸' },
+            { id: 'youtube', name: 'YouTube', icon: '▶️' },
+            { id: 'x', name: 'X (Twitter)', icon: '🐦' },
+            { id: 'tiktok', name: 'TikTok', icon: '🎶' },
+            { id: 'threads', name: 'Threads', icon: '🔗' },
+        ];
+
+        let currentTokens = {};
+
+        // --- FUNCIONES DE UTILIDAD DE LA API ---
+
+        /**
+         * Función central para todas las llamadas a la API de Render.
+         * Agrega el token de autenticación del usuario.
+         */
+        async function fetchApi(endpoint, options = {}) {
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                console.error("No hay token de usuario.");
+                return;
+            }
+
+            const defaultHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+
+            // Para FormData (subida de archivos), no se debe incluir el Content-Type,
+            // pero sí para JSON.
+            if (!(options.body instanceof FormData)) {
+                defaultHeaders['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}?user_id=${USER_ID}`, {
+                ...options,
+                headers: {
+                    ...defaultHeaders,
+                    ...options.headers // Permite sobrescribir si es necesario
+                }
+            });
+            
+            if (!response.ok) {
+                // Manejo de error de la API (401, 403, 500)
+                const errorData = await response.json().catch(() => ({ message: 'Error desconocido del servidor.' }));
+                throw new Error(`[HTTP ${response.status}] ${errorData.message}`);
+            }
+
+            return response.json();
+        }
+        
+        // --- GESTIÓN DE AUTENTICACIÓN DE USUARIO (MOCK) ---
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const msgEl = document.getElementById('login-message');
+            msgEl.classList.add('hidden');
+
+            if (username === USERNAME && password === PASSWORD) {
+                localStorage.setItem('userToken', MOCK_JWT);
+                checkAuthState();
+            } else {
+                msgEl.textContent = 'Credenciales incorrectas.';
+                msgEl.classList.remove('hidden');
+            }
+        });
+
+        function logoutUser() {
+            localStorage.removeItem('userToken');
+            checkAuthState();
+        }
+        
+        function checkAuthState() {
+            const token = localStorage.getItem('userToken');
+            const loginView = document.getElementById('login-view');
+            const dashboardView = document.getElementById('dashboard-view');
+            
+            if (token === MOCK_JWT) {
+                loginView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+                loadTokens(); // Cargar el estado de los tokens al entrar
+            } else {
+                loginView.classList.remove('hidden');
+                dashboardView.classList.add('hidden');
+            }
+        }
+        
+        // --- GESTIÓN DE TOKENS (COMUNICACIÓN CON RENDER Y N8N) ---
+        
+        /**
+         * Carga el estado de los tokens desde la API de Render/n8n.
+         */
+        async function loadTokens() {
+            const statusContainer = document.getElementById('connection-status');
+            const publishButton = document.getElementById('publish-button');
+            statusContainer.innerHTML = '<p class="text-center text-indigo-500">Cargando estado...</p>';
+            publishButton.disabled = true;
+
+            try {
+                const data = await fetchApi('/token_store', { method: 'GET' });
+                currentTokens = data.tokens || {};
+                renderConnectionStatus();
+            } catch (error) {
+                statusContainer.innerHTML = `<p class="text-red-500">Error al cargar tokens: ${error.message}</p>`;
+                console.error('Error loading tokens:', error);
+            } finally {
+                // Habilitar el botón de publicar si hay al menos una plataforma conectada
+                const validPlatforms = PLATFORMS.some(p => isTokenValid(currentTokens[p.id]));
+                publishButton.disabled = !validPlatforms;
+            }
+        }
+
+        /**
+         * Determina si un token está activo y no expirado.
+         */
+        function isTokenValid(tokenData) {
+            if (!tokenData || !tokenData.access_token) return false;
+            const expiresAt = new Date(tokenData.expiresAt).getTime();
+            // Le damos 5 minutos de margen antes de la expiración real
+            return expiresAt > Date.now() + (5 * 60 * 1000); 
+        }
+
+        /**
+         * Simula el flujo OAuth y guarda el resultado en Render/n8n.
+         */
+        async function connectPlatform(platformId) {
+            const button = document.getElementById(`btn-${platformId}`);
+            button.disabled = true;
+            button.textContent = 'Procesando...';
+
+            try {
+                // 1. Simulación del flujo OAuth (aquí iría la redirección real)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 2. Generar datos del token simulado
+                const now = Date.now();
+                const newToken = {
+                    userId: USER_ID,
+                    platform: platformId,
+                    access_token: `${platformId}_token_${now.toString(36)}`,
+                    refresh_token: `${platformId}_refresh_${now.toString(36)}`,
+                    expiresAt: new Date(now + 7 * 24 * 3600 * 1000).toISOString(), // Expira en 7 días
+                };
+
+                // 3. Llamar al API Gateway de Render para guardar el token en n8n
+                const response = await fetchApi('/token_store', {
+                    method: 'POST',
+                    body: JSON.stringify(newToken)
+                });
+                
+                if (response.status === 'success') {
+                    alert(`✅ Conexión exitosa. Token guardado en n8n.`);
+                    loadTokens(); // Recargar el estado
+                } else {
+                    throw new Error(response.message || 'Error al guardar token.');
+                }
+            } catch (error) {
+                alert(`❌ Error al conectar ${platformId}: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Conectar'; // Se actualizará en renderConnectionStatus
+            }
+        }
+        
+        /**
+         * Renderiza el estado de la conexión y las casillas de publicación.
+         */
+        function renderConnectionStatus() {
+            const statusContainer = document.getElementById('connection-status');
+            const checkboxesContainer = document.getElementById('platform-checkboxes');
+            statusContainer.innerHTML = '';
+            checkboxesContainer.innerHTML = '';
+
+            PLATFORMS.forEach(p => {
+                const tokenData = currentTokens[p.id];
+                const isValid = isTokenValid(tokenData);
+                const expiresAt = tokenData ? new Date(tokenData.expiresAt) : null;
+                const statusColor = isValid ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400';
+                const statusText = isValid ? `Válido hasta: ${expiresAt.toLocaleDateString()}` : (tokenData ? '¡EXPIRADO! Reconecta' : 'Faltante');
+                const buttonText = isValid ? 'Reconectar' : 'Conectar Cuenta';
+                const buttonColor = isValid ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-indigo-600 hover:bg-indigo-700';
+
+                // Renderizar el estado de la conexión
+                statusContainer.innerHTML += `
+                    <div class="p-3 border rounded-lg ${statusColor} transition">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-gray-700">${p.icon} ${p.name}</span>
+                            <button id="btn-${p.id}" onclick="connectPlatform('${p.id}')" class="py-1 px-3 text-xs rounded-md text-white ${buttonColor} transition" ${!isValid ? '' : ''}>
+                                ${buttonText}
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">${statusText}</p>
+                    </div>
+                `;
+
+                // Renderizar las casillas de publicación
+                checkboxesContainer.innerHTML += `
+                    <label class="flex items-center space-x-2 p-2 rounded-lg cursor-pointer ${isValid ? 'bg-green-50 hover:bg-green-100' : 'bg-gray-200 cursor-not-allowed'}" title="${isValid ? '' : 'Requiere una conexión válida.'}">
+                        <input type="checkbox" name="platforms" value="${p.id}" class="form-checkbox h-4 w-4 text-indigo-600 rounded" ${isValid ? '' : 'disabled'}>
+                        <span class="text-sm font-medium text-gray-800">${p.icon} ${p.name}</span>
+                    </label>
+                `;
+            });
+        }
+        
+        // --- GESTIÓN DE PUBLICACIÓN ---
+        
+        document.getElementById('publish-form').addEventListener('submit', handlePublish);
+        
+        /**
+         * Maneja el envío del formulario y la llamada a POST /api/v1/publish
+         */
+        async function handlePublish(e) {
+            e.preventDefault();
+            const form = e.target;
+            const publishButton = document.getElementById('publish-button');
+            const msgEl = document.getElementById('publish-message');
+            const resultsEl = document.getElementById('publish-results');
+            
+            msgEl.textContent = '';
+            resultsEl.innerHTML = '<h4 class="font-semibold text-gray-700">Resultados Detallados</h4>';
+            resultsEl.classList.add('hidden');
+            
+            // 1. Validar plataformas seleccionadas
+            const selectedPlatforms = Array.from(form.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
+            if (selectedPlatforms.length === 0) {
+                msgEl.textContent = 'Selecciona al menos una plataforma válida para publicar.';
+                msgEl.classList.remove('text-green-500');
+                msgEl.classList.add('text-red-500');
+                return;
+            }
+
+            // 2. Crear FormData
+            const formData = new FormData();
+            formData.append('userId', USER_ID);
+            formData.append('caption', document.getElementById('caption').value);
+            formData.append('media_file', document.getElementById('media-file').files[0]);
+            formData.append('platforms', JSON.stringify(selectedPlatforms)); // El backend espera un JSON string
+
+            // 3. Bloquear UI y mostrar estado
+            publishButton.disabled = true;
+            publishButton.textContent = 'Publicando... No cierres esta ventana';
+            msgEl.textContent = 'Iniciando publicación en el servidor...';
+            msgEl.classList.add('text-indigo-500');
+            msgEl.classList.remove('text-red-500', 'text-green-500');
+
+
+            try {
+                // 4. Llamada a la API de Render
+                const data = await fetchApi('/publish', {
+                    method: 'POST',
+                    body: formData // fetch con FormData no necesita Content-Type
+                });
+
+                // 5. Mostrar resultados
+                let successCount = 0;
+                let failCount = 0;
+                
+                data.results.forEach(r => {
+                    const icon = r.status === 'success' ? '✅' : '❌';
+                    const color = r.status === 'success' ? 'text-green-600' : 'text-red-600';
+                    const link = r.platform_url ? `<a href="${r.platform_url}" target="_blank" class="text-indigo-500 hover:underline">Ver Publicación</a>` : '';
+                    
+                    if (r.status === 'success') { successCount++; } else { failCount++; }
+
+                    resultsEl.innerHTML += `
+                        <div class="p-2 border rounded-md ${r.status === 'success' ? 'bg-green-50' : 'bg-red-50'}">
+                            <p class="font-semibold ${color}">${icon} ${r.platform.toUpperCase()}: ${r.message}</p>
+                            <p class="text-xs text-gray-500">${link}</p>
+                        </div>
+                    `;
+                });
+                
+                // 6. Mensaje final
+                msgEl.textContent = `Proceso completado. Éxito: ${successCount} / Fallo: ${failCount}.`;
+                msgEl.classList.remove('text-indigo-500');
+                msgEl.classList.add(failCount > 0 ? 'text-red-500' : 'text-green-500');
+                resultsEl.classList.remove('hidden');
+
+            } catch (error) {
+                msgEl.textContent = `Error crítico en el servidor: ${error.message}`;
+                msgEl.classList.add('text-red-500');
+                console.error('CRITICAL PUBLISH ERROR:', error);
+            } finally {
+                publishButton.disabled = false;
+                publishButton.textContent = 'Publicar Contenido';
+                loadTokens(); // Volver a cargar el estado del token (por si hubo refresco)
+            }
+        }
+        
+        // --- INICIALIZACIÓN ---
+        window.onload = checkAuthState;
+
+    </script>
+</body>
+</html>
